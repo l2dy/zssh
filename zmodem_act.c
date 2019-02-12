@@ -100,10 +100,11 @@ void zact_hook_sub(char **av, int master)
 	if (!sfork(&gl_child_rz)) {
 		signal(SIGINT, SIG_DFL);
 		signal(SIGWINCH, SIG_DFL);
-		dup2(master, 0);
-		dup2(master, 1);
-		close(master);
-		close(gl_slave);
+		dup2(hook_slave, 0);
+		dup2(hook_slave, 1);
+		close(hook_master);
+		close(hook_slave);
+
 		execvp(av[0], av);
 		error("error: execvp %s\n", av[0]);
 		exit(1);
@@ -111,6 +112,35 @@ void zact_hook_sub(char **av, int master)
 #ifdef DEBUG
 	printf("launching %s (pid=%i) ...\n", av[0], gl_child_rz);
 #endif
+
+	/* prepare for select() */
+	ssize_t cc;
+	char obuf[BUFSIZ];
+	struct timeval timeout = { 1, 0 };
+	fd_set hook_pty, select_pty;
+	FD_ZERO(&select_pty);
+	FD_ZERO(&hook_pty);
+	FD_SET(master, &hook_pty);
+	FD_SET(hook_master, &hook_pty);
+	int nfds = (master > hook_master ? master : hook_master) + 1;
+
+	while (gl_child_rz) {
+		FD_COPY(&hook_pty, &select_pty);
+		if (select(nfds, &select_pty, NULL, NULL, &timeout) < 1)
+			continue;
+		if (FD_ISSET(master, &select_pty)) {
+			cc = read(master, obuf, sizeof(obuf)); /* read from pty master */
+			if (cc <= 0)
+				continue;
+			write(hook_master, obuf, cc); /* write to stdout */
+		}
+		if (FD_ISSET(hook_master, &select_pty)) {
+			cc = read(hook_master, obuf, sizeof(obuf)); /* read from pty master */
+			if (cc <= 0)
+				continue;
+			write(master, obuf, cc); /* write to stdout */
+		}
+	}
 }
 
 void zact_hook(char **av, int master)

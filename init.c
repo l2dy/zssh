@@ -14,6 +14,8 @@
 
 int gl_master;                                  /* pty fd */
 int gl_slave;                                   /* tty fd */
+int hook_master;                                /* pty fd */
+int hook_slave;                                 /* tty fd */
 
 int gl_main_pid;
 volatile sig_atomic_t gl_child_output;          /* pid of child handling output from the pty */

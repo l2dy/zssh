@@ -139,6 +139,8 @@ extern t_act_tab cmdtab[];
 
 extern int gl_master;                                   /* pty fd */
 extern int gl_slave;                                    /* tty fd */
+extern int hook_master;                                 /* pty fd */
+extern int hook_slave;                                  /* tty fd */
 
 extern int gl_main_pid;
 extern volatile sig_atomic_t gl_child_output;           /* pid of child handling output from the pty */
