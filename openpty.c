@@ -12,7 +12,7 @@
 
 #define GL_SLAVENAMELEN 50
 static char gl_slavename[GL_SLAVENAMELEN + 1] = { 0 };
-static char hook_slavename[GL_SLAVENAMELEN + 1] = { 0 };
+static char gl_hook_slavename[GL_SLAVENAMELEN + 1] = { 0 };
 
 #ifdef HAVE_UTIL_H
 #include <util.h>
@@ -25,7 +25,7 @@ void getmaster(void)
 #endif
 	if (openpty(&gl_master, &gl_slave, gl_slavename, &gl_tt, &gl_win) < 0)
 		error(0, "openpty");
-	if (openpty(&hook_master, &hook_slave, hook_slavename, &gl_rtt, &gl_win) < 0)
+	if (openpty(&gl_hook_master, &gl_hook_slave, gl_hook_slavename, &gl_rtt, &gl_win) < 0)
 		error(0, "openpty");
 }
 

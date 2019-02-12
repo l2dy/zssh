@@ -100,10 +100,10 @@ void zact_hook_sub(char **av, int master)
 	if (!sfork(&gl_child_rz)) {
 		signal(SIGINT, SIG_DFL);
 		signal(SIGWINCH, SIG_DFL);
-		dup2(hook_slave, 0);
-		dup2(hook_slave, 1);
-		close(hook_master);
-		close(hook_slave);
+		dup2(gl_hook_slave, 0);
+		dup2(gl_hook_slave, 1);
+		close(gl_hook_master);
+		close(gl_hook_slave);
 
 		execvp(av[0], av);
 		error("error: execvp %s\n", av[0]);
@@ -121,8 +121,8 @@ void zact_hook_sub(char **av, int master)
 	FD_ZERO(&select_pty);
 	FD_ZERO(&hook_pty);
 	FD_SET(master, &hook_pty);
-	FD_SET(hook_master, &hook_pty);
-	int nfds = (master > hook_master ? master : hook_master) + 1;
+	FD_SET(gl_hook_master, &hook_pty);
+	int nfds = (master > gl_hook_master ? master : gl_hook_master) + 1;
 
 	while (gl_child_rz) {
 		FD_COPY(&hook_pty, &select_pty);
@@ -132,10 +132,10 @@ void zact_hook_sub(char **av, int master)
 			cc = read(master, obuf, sizeof(obuf)); /* read from pty master */
 			if (cc <= 0)
 				continue;
-			write(hook_master, obuf, cc); /* write to stdout */
+			write(gl_hook_master, obuf, cc); /* write to stdout */
 		}
-		if (FD_ISSET(hook_master, &select_pty)) {
-			cc = read(hook_master, obuf, sizeof(obuf)); /* read from pty master */
+		if (FD_ISSET(gl_hook_master, &select_pty)) {
+			cc = read(gl_hook_master, obuf, sizeof(obuf)); /* read from pty master */
 			if (cc <= 0)
 				continue;
 			write(master, obuf, cc); /* write to stdout */
