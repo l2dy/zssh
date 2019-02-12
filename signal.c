@@ -40,6 +40,12 @@ RETSIGTYPE sigchld_handler(int sig)
 	old_errno = errno;
 	signal(SIGCHLD, sigchld_handler);
 	die = 0;
+
+	/* unblock SIGCHLD, avoid missing new SIGCHLDs on return */
+	sigset_t sigchld_mask;
+	sigfillset(&sigchld_mask);
+	sigprocmask(SIG_UNBLOCK, &sigchld_mask, NULL);
+
 	while (1) {
 		errno = EINTR;
 		pid = 0;
