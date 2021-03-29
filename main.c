@@ -78,6 +78,7 @@ void rz_mode(void)
 		for (k = 0; k < ac; k++)
 			if (av[k])
 				free(av[k]);
+		free(av);
 	}
 	tcsetattr(0, TCSANOW, &gl_rtt); /* restore raw term */
 	kill(gl_child_output, SIGCONT); /* resume output */
