@@ -12,6 +12,7 @@
 
 #define GL_SLAVENAMELEN 50
 static char gl_slavename[GL_SLAVENAMELEN + 1] = { 0 };
+static char gl_hook_slavename[GL_SLAVENAMELEN + 1] = { 0 };
 
 #ifdef HAVE_UTIL_H
 #include <util.h>
@@ -32,11 +33,14 @@ void getmaster(void)
 #endif
 	if (openpty(&gl_master, &gl_slave, gl_slavename, &gl_tt, &gl_win) < 0)
 		error(0, "openpty");
+	if (openpty(&gl_hook_master, &gl_hook_slave, gl_hook_slavename, &gl_rtt, &gl_win) < 0)
+		error(0, "openpty");
 }
 
 void getslave(void)
 {
 	testslave(gl_slavename);
+	testslave(gl_hook_slavename);
 }
 
 void my_tcsetpgrp(int fd, int pgrpid)
@@ -112,6 +116,8 @@ void testslave(char *ttyname)
 void initslave(void)
 {
 	close(gl_master);
+	close(gl_hook_master);
+	close(gl_hook_slave);
 	setsid();
 
 	/* by now we should have dropped the controlling tty
@@ -134,4 +140,3 @@ void initslave(void)
 	dup2(gl_slave, 1);
 	close(gl_slave);
 }
-

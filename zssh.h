@@ -134,8 +134,10 @@ typedef struct {
 extern t_act_tab cmdtab[];
 
 
-extern int gl_master;                                   /* pty fd */
-extern int gl_slave;                                    /* tty fd */
+extern int gl_master;                                   /* ssh pty fd */
+extern int gl_slave;                                    /* ssh tty fd */
+extern int gl_hook_master;                              /* hook pty fd */
+extern int gl_hook_slave;                               /* hook tty fd */
 
 extern int gl_main_pid;
 extern volatile sig_atomic_t gl_child_output;           /* pid of child handling output from the pty */

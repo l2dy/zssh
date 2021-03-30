@@ -12,8 +12,10 @@
 #include "version.h"
 
 
-int gl_master;                                  /* pty fd */
-int gl_slave;                                   /* tty fd */
+int gl_master;                                  /* ssh pty fd */
+int gl_slave;                                   /* ssh tty fd */
+int gl_hook_master;                             /* hook pty fd */
+int gl_hook_slave;                              /* hook tty fd */
 
 int gl_main_pid;
 volatile sig_atomic_t gl_child_output;          /* pid of child handling output from the pty */
@@ -224,6 +226,3 @@ void init(int *argc, char ***argv)
 
 	signal(SIGCHLD, sigchld_handler);
 }
-
-
-

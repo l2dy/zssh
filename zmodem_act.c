@@ -96,14 +96,27 @@ void zact_repeat(char **av, int master)
 /* create the hook process and map its std{in,out} to master */
 void zact_hook_sub(char **av, int master)
 {
+	ssize_t cc;
+	char obuf[ZSSH_IO_BUFSIZ];
+	struct timeval timeout = { 0, 100000 }; /* 100ms */
+	fd_set hook_pty, select_pty;
+	int nfds;
+
 	tcsetattr(gl_slave, TCSAFLUSH, &gl_rtt);
+	tcsetattr(gl_hook_slave, TCSAFLUSH, &gl_rtt);
+	signal(SIGWINCH, SIG_IGN);
+
 	if (!sfork(&gl_child_rz)) {
 		signal(SIGINT, SIG_DFL);
 		signal(SIGWINCH, SIG_DFL);
-		dup2(master, 0);
-		dup2(master, 1);
-		close(master);
+		close(gl_master);
 		close(gl_slave);
+		close(gl_hook_master);
+		dup2(gl_hook_slave, 0);
+		dup2(gl_hook_slave, 1);
+		close(gl_hook_slave);
+
+		/* let hooked process manage terminal mode */
 		execvp(av[0], av);
 		error("error: execvp %s\n", av[0]);
 		exit(1);
@@ -111,6 +124,33 @@ void zact_hook_sub(char **av, int master)
 #ifdef DEBUG
 	printf("launching %s (pid=%i) ...\n", av[0], gl_child_rz);
 #endif
+
+	/* prepare for select() */
+	FD_ZERO(&select_pty);
+	FD_ZERO(&hook_pty);
+	FD_SET(master, &hook_pty);
+	FD_SET(gl_hook_master, &hook_pty);
+	nfds = (master > gl_hook_master ? master : gl_hook_master) + 1;
+
+	while (gl_child_rz) {
+		FD_COPY(&hook_pty, &select_pty);
+		if (select(nfds, &select_pty, NULL, NULL, &timeout) < 1)
+			continue;
+		if (FD_ISSET(master, &select_pty)) {
+			cc = read(master, obuf, sizeof(obuf)); /* read from ssh pty */
+			if (cc <= 0)
+				continue;
+			write(gl_hook_master, obuf, cc); /* write to hook process */
+		}
+		if (FD_ISSET(gl_hook_master, &select_pty)) {
+			cc = read(gl_hook_master, obuf, sizeof(obuf)); /* read from hook process */
+			if (cc <= 0)
+				continue;
+			write(master, obuf, cc); /* write to ssh pty */
+		}
+	}
+
+	signal(SIGWINCH, sigwinch_handler);
 }
 
 void zact_hook(char **av, int master)
@@ -130,5 +170,3 @@ void zact_exit(char **av, int master)
 {
 	write(master, "\n", 1);
 }
-
-
